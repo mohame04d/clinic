@@ -56,6 +56,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
+      expiresIn: '1h',
     });
 
     const refreshToken = this.jwtService.sign(
@@ -66,9 +67,11 @@ export class AuthService {
       },
     );
 
+    const { password, ...userWithoutPassword } = user; // Exclude password from response
+
     return {
       status: 'success',
-      data: user,
+      data: userWithoutPassword,
       access_token: accessToken,
       refresh_token: refreshToken,
     };
@@ -101,6 +104,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: process.env.JWT_SECRET,
+      expiresIn: '1h',
     });
 
     const refreshToken = this.jwtService.sign(
@@ -111,9 +115,12 @@ export class AuthService {
       },
     );
 
+    const { password, ...userWithoutPassword } = user; // Exclude password from response
+
+    
     return {
       status: 'success',
-      data: user,
+      data: userWithoutPassword,
       access_token: accessToken,
       refresh_token: refreshToken,
     };
