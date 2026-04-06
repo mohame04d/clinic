@@ -50,33 +50,6 @@ export class AuthService {
       },
     });
 
-    const code = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, '0');  
-
-      await this.prisma.user.update({
-        where: { email: signUpDto.email },
-        data: {
-          verificationCode: code,
-        },
-      }); 
-
-    const html = `
-      <div>
-        <h2>Welcome to Clinic App</h2>
-        <p>Your verification code is:</p>
-        <h1>${code}</h1>
-      </div>
-    `;
-
-    await this.mailService.sendMail({
-      from: 'clinic Team',
-      to: user.email,
-      subject: 'Email Verification',
-      html,
-    });
-
-
     const payload = {
       id: user.id,
       email: user.email,
