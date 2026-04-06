@@ -28,7 +28,12 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    "src/app/(test)/authantications",
+    "src/app/(test)/Booking",
+    "src/app/(test)/doctors",
+    "src/app/(test)/landing",
+    "src/app/(test)/patient"
   ],
   "exclude": ["node_modules"]
 }
