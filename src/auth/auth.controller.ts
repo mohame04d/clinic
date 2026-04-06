@@ -17,6 +17,17 @@ export class AuthController {
   ) {
     return this.authService.signUp(signUpDto);
   }
+
+  @Post('/signup-code')
+  verifyCodeSignUp(
+    @Body(new ValidationPipe({ forbidNonWhitelisted: true }))
+    verifyCode: {
+      email: string;
+      code: string;
+    },
+  ) {
+    return this.authService.verifyCodeSignUp(verifyCode);
+  }
   @Post('/sign-in')
   signIn(
     @Body(new ValidationPipe({ forbidNonWhitelisted: true }))

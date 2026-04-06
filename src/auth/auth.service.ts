@@ -39,7 +39,9 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(signUpDto.password, 12);
 
-
+    const code = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, '0');
 
     const user = await this.prisma.user.create({
       data: {
@@ -47,6 +49,53 @@ export class AuthService {
         email: signUpDto.email,
         password: hashedPassword,
         role: 'PATIENT',
+        verificationCode: code,
+      },
+    });
+
+    const html = `
+      <div>
+        <h2>Welcome to our Clinic</h2>
+        <p>Your verification code is:</p>
+        <h1>${code}</h1>
+      </div>
+    `;
+
+    await this.mailService.sendMail({
+      from: 'clinic Team',
+      to: user.email,
+      subject: 'Welcome to our Clinic - Verify Your Email',
+      html,
+    });
+
+    const { password, verificationCode, ...userWithoutPasswordAndVerificationCode } = user; // Exclude password and verificationCode from response
+
+    return {
+      status: 'success',
+      message:'code send to email',
+      data: userWithoutPasswordAndVerificationCode,
+    };
+  }
+
+  async verifyCodeSignUp(data: { email: string; code: string }) {
+
+    if(!data.email || !data.code){
+      throw new HttpException('Email and code are required', 400);
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.verificationCode !== data.code) {
+      throw new UnauthorizedException('Invalid verification code');
+    }
+
+    await this.prisma.user.update({
+      where: { email: data.email },
+      data: {
+        verificationCode: null,
       },
     });
 
@@ -69,11 +118,9 @@ export class AuthService {
       },
     );
 
-    const { password, ...userWithoutPassword } = user; // Exclude password from response
-
     return {
       status: 'success',
-      data: userWithoutPassword,
+      message: 'Code verified successfully',
       access_token: accessToken,
       refresh_token: refreshToken,
     };
@@ -119,7 +166,6 @@ export class AuthService {
 
     const { password, ...userWithoutPassword } = user; // Exclude password from response
 
-    
     return {
       status: 'success',
       data: userWithoutPassword,
