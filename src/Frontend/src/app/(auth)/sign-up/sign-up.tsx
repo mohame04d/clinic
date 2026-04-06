@@ -72,7 +72,7 @@ export function SignUpForm() {
       <CardContent>
         <form className="space-y-4">
           {/* USERNAME - Staggered 1 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="username">Username</FieldLabel>
               <Input
@@ -89,7 +89,7 @@ export function SignUpForm() {
           </div>
 
           {/* PASSWORD - Staggered 2 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <div className="relative">
@@ -192,7 +192,7 @@ export function SignUpForm() {
           </div>
 
           {/* CONFIRM PASSWORD - Staggered 3 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="confirmPassword">
                 Confirm Password
@@ -210,7 +210,7 @@ export function SignUpForm() {
           </div>
 
           {/* SUBMIT - Staggered 4 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400 fill-mode-backwards pt-2">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-both pt-2">
             <Button
               type="submit"
               className="w-full py-5 active:scale-[0.98] transition-transform"

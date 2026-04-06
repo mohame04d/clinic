@@ -43,7 +43,7 @@ export function LoginForm() {
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* USERNAME FIELD */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="username">Username</FieldLabel>
               <Input
@@ -59,7 +59,7 @@ export function LoginForm() {
           </div>
 
           {/* PASSWORD FIELD */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>
               <Input
@@ -81,7 +81,7 @@ export function LoginForm() {
           </div>
 
           {/* MAIN SUBMIT BUTTON */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-backwards pt-2">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both pt-2">
             <Button
               type="submit"
               className="w-full py-5 active:scale-[0.98] transition-transform"
@@ -91,7 +91,7 @@ export function LoginForm() {
           </div>
 
           {/* DIVIDER */}
-          <div className="relative my-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400 fill-mode-backwards">
+          <div className="relative my-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-both">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
@@ -103,7 +103,7 @@ export function LoginForm() {
           </div>
 
           {/* SOCIAL LOGINS */}
-          <div className="space-y-3 flex gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-backwards">
+          <div className="space-y-3 flex gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-both">
             <Button
               type="button"
               variant="outline"

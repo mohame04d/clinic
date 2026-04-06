@@ -69,7 +69,7 @@ export default function ResetPasswordForm() {
       <CardContent>
         <form className="space-y-4">
           {/* PASSWORD FIELD - Staggered 1 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">New Password</FieldLabel>
               <div className="relative">
@@ -171,7 +171,7 @@ export default function ResetPasswordForm() {
           </div>
 
           {/* CONFIRM PASSWORD - Staggered 2 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="confirmPassword">
                 Confirm Password
@@ -189,7 +189,7 @@ export default function ResetPasswordForm() {
           </div>
 
           {/* SUBMIT - Staggered 3 */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-backwards pt-2">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both pt-2">
             <Button
               type="submit"
               className="w-full py-5 active:scale-[0.98] transition-transform"

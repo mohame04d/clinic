@@ -6,7 +6,7 @@ import { DoctorCard } from './doctorCard';
 
 export function DoctorDirectory() {
   return (
-    <section className="space-y-8 animate-in fade-in duration-1000 delay-500 fill-mode-backwards">
+    <section className="space-y-8 animate-in fade-in duration-1000 delay-500 fill-mode-both">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
@@ -29,7 +29,7 @@ export function DoctorDirectory() {
         {DOCTORS.map((doctor, index) => (
           <div
             key={doctor.id}
-            className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-backwards"
+            className="animate-in fade-in slide-in-from-bottom-8 duration-700 fill-mode-both"
             style={{ animationDelay: `${index * 150 + 300}ms` }}
           >
             <DoctorCard doctor={doctor} />

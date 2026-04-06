@@ -22,20 +22,20 @@ export function HeroSection() {
         </div>
 
         {/* Staggered entrance 2: Heading (delayed) */}
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-tight animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-backwards">
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground leading-tight animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
           Expert dental care, <br />
           <span className="text-primary italic font-serif">simplified.</span>
         </h1>
 
         {/* Staggered entrance 3: Paragraph (delayed further) */}
-        <p className="text-muted-foreground max-w-xl leading-relaxed text-lg animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300 fill-mode-backwards">
+        <p className="text-muted-foreground max-w-xl leading-relaxed text-lg animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300 fill-mode-both">
           Experience the future of dentistry. We combine clinical precision with
           an editorial-grade patient experience, ensuring your smile receives
           the artistry and authority it deserves.
         </p>
 
         {/* Staggered entrance 4: Buttons */}
-        <div className="flex flex-wrap gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500 fill-mode-backwards">
+        <div className="flex flex-wrap gap-4 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500 fill-mode-both">
           <Button
             size="lg"
             className="py-6 px-4 rounded-lg font-bold shadow-md text-base hover:shadow-lg hover:-translate-y-0.25"
@@ -55,7 +55,7 @@ export function HeroSection() {
       </div>
 
       {/* Image Entrance: Fade and scale in smoothly */}
-      <div className="col-span-12 lg:col-span-5 relative animate-in fade-in zoom-in-95 duration-1000 delay-300 fill-mode-backwards">
+      <div className="col-span-12 lg:col-span-5 relative animate-in fade-in zoom-in-95 duration-1000 delay-300 fill-mode-both">
         <div className="aspect-square rounded-2xl overflow-hidden shadow-xl group">
           <Image
             alt="Modern dental clinic"
@@ -67,7 +67,7 @@ export function HeroSection() {
         </div>
 
         {/* Floating Card Entrance */}
-        <Card className="absolute -bottom-6 -left-6 p-2 rounded-xl shadow-md border-border max-w-xs hidden md:block animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700 fill-mode-backwards hover:-translate-y-1 hover:shadow-xl transition-all">
+        <Card className="absolute -bottom-6 -left-6 p-2 rounded-xl shadow-md border-border max-w-xs hidden md:block animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700 fill-mode-both hover:-translate-y-1 hover:shadow-xl transition-all">
           <CardContent className="p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-inner">
               <Star className="w-6 h-6 fill-current" />

@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/src/components/ui/card';
 
 export function FeaturesSection() {
   return (
-    <Card className="bg-muted animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-700 fill-mode-backwards">
+    <Card className="bg-muted animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-700 fill-mode-both">
       <CardContent className=" py-2 grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Feature 1 */}
         <div className="group space-y-4 p-4 rounded-xl hover:bg-background hover:shadow-md transition-all duration-300 cursor-default">

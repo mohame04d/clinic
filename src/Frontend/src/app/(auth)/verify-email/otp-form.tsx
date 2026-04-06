@@ -35,7 +35,7 @@ export default function OTPForm() {
       <CardContent>
         <form className="space-y-4">
           {/* OTP FIELD */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-backwards">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="otp">Verification code</FieldLabel>
               <Input
@@ -53,7 +53,7 @@ export default function OTPForm() {
           </div>
 
           {/* VERIFY BUTTON */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-backwards pt-2">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both pt-2">
             <Button
               type="submit"
               className="w-full py-5 active:scale-[0.98] transition-transform"
@@ -63,7 +63,7 @@ export default function OTPForm() {
           </div>
 
           {/* RESEND & TIMER */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-backwards text-center">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both text-center">
             <Button
               type="button"
               variant="link"
