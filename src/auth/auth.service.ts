@@ -39,6 +39,8 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(signUpDto.password, 12);
 
+
+
     const user = await this.prisma.user.create({
       data: {
         name: signUpDto.name,
@@ -47,6 +49,33 @@ export class AuthService {
         role: 'PATIENT',
       },
     });
+
+    const code = Math.floor(Math.random() * 1000000)
+      .toString()
+      .padStart(6, '0');  
+
+      await this.prisma.user.update({
+        where: { email: signUpDto.email },
+        data: {
+          verificationCode: code,
+        },
+      }); 
+
+    const html = `
+      <div>
+        <h2>Welcome to Clinic App</h2>
+        <p>Your verification code is:</p>
+        <h1>${code}</h1>
+      </div>
+    `;
+
+    await this.mailService.sendMail({
+      from: 'clinic Team',
+      to: user.email,
+      subject: 'Email Verification',
+      html,
+    });
+
 
     const payload = {
       id: user.id,
