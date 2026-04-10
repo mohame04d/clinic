@@ -1,16 +1,20 @@
-'server-only';
 import z from 'zod';
 
 const passwordSchema = z
   .string()
   .min(8, 'At least 8 characters')
+  .max(20, 'At most 20 characters')
   .regex(/[A-Z]/, 'Require an uppercase letter')
   .regex(/[0-9]/, 'Require a number')
   .regex(/[^A-Za-z0-9]/, 'Require a special character');
 
 export const SignUpFormSchema = z
   .object({
-    username: z.string().email(),
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(30, 'Username must be at most 30 characters'),
+    email: z.string().email('Please enter a valid email'),
     password: passwordSchema,
     confirmPassword: z.string(),
   })
@@ -25,8 +29,11 @@ export const SignUpFormSchema = z
   });
 
 export const loginFormSchema = z.object({
-  username: z.string().email('Please enter a valid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Please enter a valid email'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(20, 'Password must be at most 20 characters'),
 });
 
 export const otpFormSchema = z.object({
@@ -36,9 +43,11 @@ export const otpFormSchema = z.object({
     .max(6, 'OTP must be 6 digits')
     .regex(/^\d+$/, 'OTP must be numbers'),
 });
+
 export const forgetPasswordSchema = z.object({
-  username: z.string().email('Please enter a valid email'),
+  email: z.string().email('Please enter a valid email'),
 });
+
 export const resetPasswordSchema = z
   .object({
     password: passwordSchema,

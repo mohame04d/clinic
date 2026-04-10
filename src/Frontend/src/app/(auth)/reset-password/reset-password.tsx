@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Circle, Eye, EyeOff } from 'lucide-react';
+import { z } from 'zod';
+import { Check, Circle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
@@ -18,6 +19,8 @@ import { cn } from '@/src/lib/utils';
 
 import { resetPasswordSchema } from '@/src/validations/zod';
 import { passwordRules } from '@/src/validations/passwordRules';
+import { changePasswordAction } from '@/src/features/auth/actions/auth-actions';
+import type { ActionResult } from '@/src/features/auth/actions/auth-actions';
 
 const PASSWORD_COLORS = ['#FF4D4F', '#FAAD14', '#40A9FF', '#52C41A'];
 
@@ -27,7 +30,7 @@ export default function ResetPasswordForm() {
     control,
     setFocus,
     formState: { errors },
-  } = useForm({
+  } = useForm<z.infer<typeof resetPasswordSchema>>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       password: '',
@@ -36,6 +39,11 @@ export default function ResetPasswordForm() {
     mode: 'onTouched',
     reValidateMode: 'onChange',
   });
+
+  const [state, action, pending] = useActionState<ActionResult, FormData>(
+    changePasswordAction,
+    { success: false, errorMessage: {} },
+  );
 
   const [seePassword, setSeePassword] = useState(false);
 
@@ -67,17 +75,28 @@ export default function ResetPasswordForm() {
   return (
     <Card className="transition-all duration-300 hover:shadow-lg border-border/50">
       <CardContent>
-        <form className="space-y-4">
-          {/* PASSWORD FIELD - Staggered 1 */}
+        <form action={action} className="space-y-4">
+          {/* SERVER ERROR */}
+          {state.errorMessage?.server && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-destructive text-sm text-center bg-destructive/10 rounded-md py-2 px-3">
+                {state.errorMessage.server[0]}
+              </p>
+            </div>
+          )}
+
+          {/* PASSWORD FIELD */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">New Password</FieldLabel>
               <div className="relative">
                 <Input
                   id="password"
+                  name="password"
                   type={seePassword ? 'text' : 'password'}
                   placeholder="Enter new password"
                   className={`transition-all focus:ring-2 focus:ring-primary/20 ${errors.password?.message && 'border-destructive bg-destructive/10 text-destructive'}`}
+                  disabled={pending}
                   {...register('password')}
                   aria-invalid={!!errors.password}
                   onKeyDown={handleFocusNext('confirmPassword')}
@@ -87,15 +106,17 @@ export default function ResetPasswordForm() {
                   <button
                     type="button"
                     onClick={() => setSeePassword((p) => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${errors.password?.message ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
                   >
                     {seePassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 )}
               </div>
 
-              {errors.password?.message ? (
-                <FieldError>{errors.password?.message}</FieldError>
+              {errors.password?.message || state.errorMessage.password?.[0] ? (
+                <FieldError>
+                  {errors.password?.message || state.errorMessage.password?.[0]}
+                </FieldError>
               ) : (
                 <FieldDescription>
                   Your password must satisfy all rules below.
@@ -170,7 +191,7 @@ export default function ResetPasswordForm() {
             </Field>
           </div>
 
-          {/* CONFIRM PASSWORD - Staggered 2 */}
+          {/* CONFIRM PASSWORD */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="confirmPassword">
@@ -178,23 +199,35 @@ export default function ResetPasswordForm() {
               </FieldLabel>
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
+                disabled={pending}
                 {...register('confirmPassword')}
                 aria-invalid={!!errors.confirmPassword}
               />
-              <FieldError>{errors.confirmPassword?.message}</FieldError>
+              <FieldError>
+                {errors.confirmPassword?.message || state.errorMessage.confirmPassword?.[0]}
+              </FieldError>
             </Field>
           </div>
 
-          {/* SUBMIT - Staggered 3 */}
+          {/* SUBMIT */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both pt-2">
             <Button
               type="submit"
+              disabled={pending}
               className="w-full py-5 active:scale-[0.98] transition-transform"
             >
-              Reset Password
+              {pending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={20} />
+                  Resetting...
+                </span>
+              ) : (
+                'Reset Password'
+              )}
             </Button>
           </div>
         </form>

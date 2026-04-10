@@ -65,9 +65,9 @@ export class AuthService {
       });
 
       const refresh_token = await this.jwtService.signAsync(
-        { ...payload, countEX: 5 },
+        { ...payload, countEx: 5 },
         {
-          secret: process.env.JWT_SECRET_REFRESHTOKEN,
+          secret: process.env.JWT_REFRESH_SECRET,
           expiresIn: '7d',
         },
       );
@@ -93,9 +93,9 @@ export class AuthService {
     });
 
     const refresh_token = await this.jwtService.signAsync(
-      { ...payload, countEX: 5 },
+      { ...payload, countEx: 5 },
       {
-        secret: process.env.JWT_SECRET_REFRESHTOKEN,
+        secret: process.env.JWT_REFRESH_SECRET,
         expiresIn: '7d',
       },
     );

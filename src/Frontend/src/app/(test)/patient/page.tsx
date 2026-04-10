@@ -366,8 +366,7 @@ function Footer() {
             Smart Dental Clinic
           </span>
           <p className="text-sm font-normal text-muted-foreground mt-2">
-            © {new Date().getFullYear()} Smart Dental Clinic. All rights
-            reserved.
+            Smart Dental Clinic. All rights reserved.
           </p>
         </div>
         <div className="flex gap-8">
