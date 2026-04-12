@@ -18,25 +18,38 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  name      String
-  email     String   @unique
-  password  String
+  name     String
+  email    String @unique
+  password String
 
-  role      Role     @default(PATIENT)
+  role Role @default(PATIENT)
 
-  phone     String?
+  phone       String?
   dateOfBirth DateTime?
 
-  verificationCode String? 
-
+  verificationCode    String?
+  active              Boolean   @default(true)
   refreshToken        String?
   resetpasswordToken  String?
   resetpasswordExpire DateTime?
 
-  passwordChangedAt   DateTime?
+  passwordChangedAt DateTime?
+
+  doctor Doctor?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Doctor {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  specialty String
+  bio       String?
+  photo     String?
+  rating    Float?  @default(0)
+  location  String?
 }

@@ -1,11 +1,14 @@
-import 'dotenv/config'; // ←←← لازم يكون أول سطر في الملف
-
+import 'dotenv/config'; 
+import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('/api/v1');
+
+    app.use(cookieParser());
+
  app.enableCors({
   origin: 'http://localhost:3000',     // Next.js frontend
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
