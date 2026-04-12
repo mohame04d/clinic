@@ -1,5 +1,6 @@
 'use client';
 
+import { useActionState, useState } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Input } from '@/src/components/ui/input';
@@ -7,24 +8,34 @@ import { Field, FieldLabel, FieldError } from '@/src/components/ui/field';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// Make sure your schema path is correct!
 import { loginFormSchema } from '@/src/validations/zod';
 import { AuthTabs } from '@/src/features/auth/components/authTabs';
+import { signInAction } from '@/src/features/auth/actions/auth-actions';
+import type { ActionResult } from '@/src/features/auth/actions/auth-actions';
 
 export function LoginForm() {
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { email: '', password: '' },
     mode: 'onTouched',
     reValidateMode: 'onChange',
   });
 
-  // Allows users to press "Enter" to quickly jump to the next field
+  const [state, action, pending] = useActionState<ActionResult, FormData>(
+    signInAction,
+    { success: false, errorMessage: {} },
+  );
+
+  const [seePassword, setSeePassword] = useState(false);
+  const passwordValue = form.watch('password');
+  const isPasswordEmpty = passwordValue === '';
+
   const handleFocusNext =
-    (focusNext: 'username' | 'password') =>
+    (focusNext: 'email' | 'password') =>
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -32,29 +43,37 @@ export function LoginForm() {
       }
     };
 
-  // Your submit handler to send data to NestJS will go here eventually!
-  const onSubmit = (data: z.infer<typeof loginFormSchema>) => {
-    console.log('Form Submitted!', data);
-  };
-
   return (
     <Card className="transition-all duration-300 hover:shadow-lg border-border/50">
       <AuthTabs activeTab="sign-in" />
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* USERNAME FIELD */}
+        <form action={action} className="space-y-4">
+          {/* SERVER ERROR */}
+          {state.errorMessage?.server && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-destructive text-sm text-center bg-destructive/10 rounded-md py-2 px-3">
+                {state.errorMessage.server[0]}
+              </p>
+            </div>
+          )}
+
+          {/* EMAIL FIELD */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
             <Field>
-              <FieldLabel htmlFor="username">Username</FieldLabel>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
-                id="username"
+                id="email"
+                name="email"
                 type="email"
                 placeholder="Enter your Email"
-                {...form.register('username')}
+                disabled={pending}
+                {...form.register('email')}
                 onKeyDown={handleFocusNext('password')}
-                aria-invalid={!!form.formState.errors.username}
+                aria-invalid={!!form.formState.errors.email}
               />
-              <FieldError>{form.formState.errors.username?.message}</FieldError>
+              <FieldError>
+                {form.formState.errors.email?.message || state.errorMessage.email?.[0]}
+              </FieldError>
             </Field>
           </div>
 
@@ -62,14 +81,29 @@ export function LoginForm() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                {...form.register('password')}
-                aria-invalid={!!form.formState.errors.password}
-              />
-              <FieldError>{form.formState.errors.password?.message}</FieldError>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={seePassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  disabled={pending}
+                  {...form.register('password')}
+                  aria-invalid={!!form.formState.errors.password}
+                />
+                {!isPasswordEmpty && (
+                  <button
+                    type="button"
+                    onClick={() => setSeePassword((p) => !p)}
+                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${form.formState.errors.password?.message ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
+                  >
+                    {seePassword ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                )}
+              </div>
+              <FieldError>
+                {form.formState.errors.password?.message || state.errorMessage.password?.[0]}
+              </FieldError>
             </Field>
 
             <Link
@@ -84,9 +118,17 @@ export function LoginForm() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both pt-2">
             <Button
               type="submit"
+              disabled={pending}
               className="w-full py-5 active:scale-[0.98] transition-transform"
             >
-              Login
+              {pending ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="animate-spin" size={20} />
+                  Signing in...
+                </span>
+              ) : (
+                'Login'
+              )}
             </Button>
           </div>
 
@@ -108,6 +150,10 @@ export function LoginForm() {
               type="button"
               variant="outline"
               className="flex-1 py-5 flex items-center justify-center hover:bg-muted active:scale-[0.98] transition-all group"
+              onClick={() => {
+                // SECURITY: Initiate OAuth flow directly with the backend.
+                window.location.href = 'http://localhost:4000/api/v1/auth/google/sign';
+              }}
             >
               <Image
                 src="/icons8-google-logo.svg"

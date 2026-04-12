@@ -92,6 +92,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid verification code');
     }
 
+    // SECURITY: Once the verification code is successfully validated, we nullify it.
+    // This prevents replay attacks where an attacker could reuse the same code.
     await this.prisma.user.update({
       where: { email: data.email },
       data: {
@@ -230,35 +232,62 @@ export class AuthService {
       throw new UnauthorizedException('Invalid verification code');
     }
 
+    // SECURITY: Generate a secure reset token (UUIDv4) and set to expire in 10 minutes.
+    // Using an opaque UUID ensures the token cannot be guessed or forged.
+    // Setting an expiry minimizes the window of opportunity if the token is leaked.
+    const resetToken = crypto.randomUUID();
+    const resetExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // SECURITY: Nullify the OTP verification code to prevent reuse (replay attack).
     await this.prisma.user.update({
       where: { email: data.email },
       data: {
         verificationCode: null,
+        resetpasswordToken: resetToken,
+        resetpasswordExpire: resetExpire,
       },
     });
 
     return {
       status: 'success',
       message: 'Code verified successfully',
+      resetToken,
     };
   }
 
   // =========================
-  // CHANGE PASSWORD
+  // CHANGE PASSWORD (SECURED)
   // =========================
-  async changePassword(dto: ChangePasswordDto & { email: string }) {
+  async changePassword(dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
     if (!user) throw new NotFoundException('User not found');
 
+    // SECURITY: Verify the reset token exactly matches what is stored in the database.
+    // This connects the successful OTP verification context to this password change request.
+    if (!user.resetpasswordToken || user.resetpasswordToken !== dto.resetToken) {
+      throw new UnauthorizedException('Invalid or missing reset token');
+    }
+
+    // Check token hasn't expired
+    if (!user.resetpasswordExpire || user.resetpasswordExpire < new Date()) {
+      throw new UnauthorizedException('Reset token has expired. Please request a new code.');
+    }
+
+    // SECURITY: Use bcrypt to securely hash the new password.
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
+    // SECURITY: After the password is changed successfully, we MUST clear the resetToken
+    // and resetExpire to invalidate this specific reset session and prevent reuse.
     await this.prisma.user.update({
       where: { email: dto.email },
       data: {
         password: hashedPassword,
+        resetpasswordToken: null,
+        resetpasswordExpire: null,
+        passwordChangedAt: new Date(),
       },
     });
 

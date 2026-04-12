@@ -1,7 +1,7 @@
 export const passwordRules = [
   {
-    test: (password: string) => password.length >= 8,
-    message: 'At least 8 characters',
+    test: (password: string) => password.length >= 8 && password.length <= 20,
+    message: '8 to 20 characters',
   },
   {
     test: (password: string) => /[A-Z]/.test(password),
