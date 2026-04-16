@@ -38,4 +38,50 @@ export class DoctorService {
     };
   }
 
+  async getDoctorsAvailability() {
+  return this.prisma.doctor.findMany({
+    select: {
+      user: {
+        select: {
+          name: true, // اسم الدكتور
+        },
+      },
+      schedules: {
+        select: {
+          day: true,
+          timeSlots: {
+            select: {
+              start: true,
+              end: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+async getDoctorAvailability(doctorId: string) {
+  return this.prisma.doctor.findUnique({
+    where: { id: doctorId },
+    select: {
+      user: {
+        select: {
+          name: true,
+        },
+      },
+      schedules: {
+        select: {
+          day: true,
+          timeSlots: {
+            select: {
+              start: true,
+              end: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
 }

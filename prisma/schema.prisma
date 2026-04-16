@@ -1,10 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
@@ -12,44 +8,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  DOCTOR
-  PATIENT
+model TimeSlot {
+  id            String       @id @default(uuid())
+  start         String
+  end           String
+
+  dayScheduleId String
+  daySchedule   DaySchedule  @relation(fields: [dayScheduleId], references: [id])
+}
+
+model DaySchedule {
+  id        String     @id @default(uuid())
+  day       Day
+
+  doctorId  String
+  doctor    Doctor     @relation(fields: [doctorId], references: [id])
+
+  timeSlots TimeSlot[]
 }
 
 model User {
-  id String @id @default(cuid())
-
-  name     String
-  email    String @unique
-  password String
-
-  role Role @default(PATIENT)
-
-  phone       String?
-  dateOfBirth DateTime?
-
-  verificationCode    String?
-  active              Boolean   @default(true)
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  password            String
+  role                Role      @default(PATIENT)
+  phone               String?
+  dateOfBirth         DateTime?
   refreshToken        String?
   resetpasswordToken  String?
   resetpasswordExpire DateTime?
-
-  passwordChangedAt DateTime?
-
-  doctor Doctor?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  passwordChangedAt   DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  active              Boolean   @default(true)
+  verificationCode    String?
+  doctor              Doctor?
 }
 
 model Doctor {
   id        String  @id @default(cuid())
   userId    String  @unique
-  user      User    @relation(fields: [userId], references: [id])
   specialty String
   bio       String?
   photo     String?
   rating    Float?  @default(0)
   location  String?
+  user      User    @relation(fields: [userId], references: [id])
+  schedules DaySchedule[]
+}
+
+enum Role {
+  DOCTOR
+  PATIENT
+}
+
+enum Day {
+  SAT
+  SUN
+  MON
+  TUE
+  WED
+  THU
+  FRI
 }
