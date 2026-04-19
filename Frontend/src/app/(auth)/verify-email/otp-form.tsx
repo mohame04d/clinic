@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { useActionState, useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,10 +16,15 @@ import { otpFormSchema } from '@/src/validations/zod';
 import {
   verifyCodeAction,
   resendCodeAction,
+  getResendTimerAction,
 } from '@/src/features/auth/actions/auth-actions';
 import type { ActionResult } from '@/src/features/auth/actions/auth-actions';
 
-export default function OTPForm() {
+interface OTPFormProps {
+  initialSecondsRemaining: number;
+}
+
+export default function OTPForm({ initialSecondsRemaining }: OTPFormProps) {
   const searchParams = useSearchParams();
   const flow = searchParams.get('flow') || 'reset';
 
@@ -35,37 +40,61 @@ export default function OTPForm() {
     { success: false, errorMessage: {} },
   );
 
-  const [timeLeft, setTimeLeft] = useState(300);
+  // Custom error tracking
+  const [blurredWithContent, setBlurredWithContent] = useState(false);
+  const { isSubmitted, errors } = form.formState;
+  const otpValue = form.watch('otp');
+  const isOtpEmpty = otpValue === '';
+
+  const showOtpError =
+    !!errors.otp && (isSubmitted || (blurredWithContent && !isOtpEmpty));
+
+  const otpRegister = form.register('otp');
+
+  // SECURITY: Timer state is seeded from a server-computed value (HTTP-only cookie).
+  // The client only counts down from whatever the server told it — no localStorage,
+  // no client-side timestamp that an attacker could edit in DevTools.
+  const [timeLeft, setTimeLeft] = useState(initialSecondsRemaining);
   const [resending, setResending] = useState(false);
   const [resendError, setResendError] = useState('');
 
+  // Countdown effect — purely cosmetic, the real enforcement is server-side
   useEffect(() => {
+    if (timeLeft <= 0) return;
+
     const interval = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const handleResend = async () => {
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  // SECURITY: On resend, the server action checks the HTTP-only cookie.
+  // Even if someone bypasses the disabled button, the server will reject
+  // the request and return the real remaining seconds.
+  const handleResend = useCallback(async () => {
     setResending(true);
     setResendError('');
     try {
       const result = await resendCodeAction();
       if (result.success) {
-        setTimeLeft(300);
+        setTimeLeft(result.secondsRemaining ?? 120);
       } else {
+        // If the server says "wait N seconds", sync the timer to that value
+        if (result.secondsRemaining && result.secondsRemaining > 0) {
+          setTimeLeft(result.secondsRemaining);
+        }
         setResendError(result.errorMessage?.server?.[0] || 'Failed to resend');
       }
     } finally {
       setResending(false);
     }
-  };
+  }, []);
 
   return (
     <Card className="transition-all duration-300 hover:shadow-lg border-border/50">
       <CardContent>
         <form action={action} className="space-y-4">
-          {/* Hidden flow input for the server action */}
           <input type="hidden" name="flow" value={flow} />
 
           {/* SERVER ERROR */}
@@ -90,18 +119,22 @@ export default function OTPForm() {
               <FieldLabel htmlFor="otp">Verification code</FieldLabel>
               <Input
                 id="otp"
-                name="otp"
                 type="text"
                 autoFocus
                 maxLength={6}
                 placeholder="Enter OTP"
                 className="transition-all focus:ring-2 focus:ring-primary/20 text-center text-lg tracking-widest"
                 disabled={pending}
-                aria-invalid={!!form.formState.errors.otp}
-                {...form.register('otp')}
+                {...otpRegister}
+                onBlur={(e) => {
+                  otpRegister.onBlur(e);
+                  setBlurredWithContent(e.target.value !== '');
+                }}
+                aria-invalid={showOtpError}
               />
               <FieldError>
-                {form.formState.errors.otp?.message || state.errorMessage.otp?.[0]}
+                {(showOtpError ? errors.otp?.message : null) ||
+                  state.errorMessage.otp?.[0]}
               </FieldError>
             </Field>
           </div>

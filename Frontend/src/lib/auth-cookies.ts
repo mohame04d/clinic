@@ -77,3 +77,34 @@ export async function clearResetData() {
   cookieStore.delete('reset_email');
   cookieStore.delete('reset_token');
 }
+
+// ---------- OTP Resend Timer Cookie ----------
+// SECURITY: The resend cooldown is enforced via an HTTP-only cookie storing
+// the Unix timestamp (ms) when the OTP was last sent. Because the cookie is
+// httpOnly, client-side JavaScript cannot read or modify it, preventing
+// attackers from bypassing the resend cooldown via DevTools.
+
+const OTP_COOLDOWN_SECONDS = 120; // 2 minutes
+
+export async function setOtpSentAt() {
+  const cookieStore = await cookies();
+  cookieStore.set('otp_sent_at', Date.now().toString(), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: OTP_COOLDOWN_SECONDS,
+  });
+}
+
+export async function getOtpSecondsRemaining(): Promise<number> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get('otp_sent_at')?.value;
+  if (!raw) return 0;
+
+  const sentAt = parseInt(raw, 10);
+  if (isNaN(sentAt)) return 0;
+
+  const elapsed = Math.floor((Date.now() - sentAt) / 1000);
+  return Math.max(0, OTP_COOLDOWN_SECONDS - elapsed);
+}

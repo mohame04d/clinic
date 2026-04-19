@@ -13,6 +13,8 @@ import {
   setResetToken,
   getResetToken,
   clearResetData,
+  setOtpSentAt,
+  getOtpSecondsRemaining,
 } from '@/src/lib/auth-cookies';
 import {
   loginFormSchema,
@@ -108,6 +110,7 @@ export async function signUpAction(
 
     await setAuthCookies(res.access_token, res.refresh_token);
     await setResetEmail(parsed.data.email);
+    await setOtpSentAt();
 
     redirect('/verify-email?flow=signup');
   } catch (err) {
@@ -140,6 +143,7 @@ export async function forgotPasswordAction(
     });
 
     await setResetEmail(parsed.data.email);
+    await setOtpSentAt();
 
     redirect('/verify-email?flow=reset');
   } catch (err) {
@@ -195,22 +199,41 @@ export async function verifyCodeAction(
 // =========================
 // RESEND CODE (no FormData)
 // =========================
-export async function resendCodeAction(): Promise<ActionResult> {
+export async function resendCodeAction(): Promise<ActionResult & { secondsRemaining?: number }> {
   try {
+    // SECURITY: Enforce cooldown server-side so attackers cannot bypass it
+    const remaining = await getOtpSecondsRemaining();
+    if (remaining > 0) {
+      return {
+        success: false,
+        errorMessage: { server: [`Please wait ${remaining} seconds before resending.`] },
+        secondsRemaining: remaining,
+      };
+    }
+
     const email = await getResetEmail();
     if (!email) {
       return { success: false, errorMessage: { server: ['Session expired. Please start over.'] } };
     }
 
     await apiPost<MessageResponse>('/auth/reset-password', { email });
+    await setOtpSentAt();
 
-    return { success: true, errorMessage: {} };
+    return { success: true, errorMessage: {}, secondsRemaining: 120 };
   } catch (err) {
     if (err instanceof ApiError) {
       return { success: false, errorMessage: { server: [err.message] } };
     }
     return { success: false, errorMessage: { server: ['Failed to resend code'] } };
   }
+}
+
+// =========================
+// GET RESEND TIMER (secure)
+// =========================
+export async function getResendTimerAction(): Promise<{ secondsRemaining: number }> {
+  const secondsRemaining = await getOtpSecondsRemaining();
+  return { secondsRemaining };
 }
 
 // =========================

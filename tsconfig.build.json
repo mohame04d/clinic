@@ -6,6 +6,8 @@
     "dist",
     "**/*spec.ts",
     "src/frontend",
-    "src/frontend/**/*"
+    "src/frontend/**/*",
+    "Frontend",
+    "Frontend/**/*"
   ]
 }

@@ -29,7 +29,7 @@ export default function ResetPasswordForm() {
     register,
     control,
     setFocus,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<z.infer<typeof resetPasswordSchema>>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -45,14 +45,27 @@ export default function ResetPasswordForm() {
     { success: false, errorMessage: {} },
   );
 
+  const [blurredWithContent, setBlurredWithContent] = useState({
+    password: false,
+    confirmPassword: false,
+  });
+
   const [seePassword, setSeePassword] = useState(false);
 
-  const passwordValue = useWatch({
-    control,
-    name: 'password',
-    defaultValue: '',
-  });
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
+  const confirmPasswordValue = useWatch({ control, name: 'confirmPassword', defaultValue: '' });
+
   const isPasswordEmpty = passwordValue === '';
+  const isConfirmPasswordEmpty = confirmPasswordValue === '';
+
+  const showPasswordError =
+    !!errors.password && (isSubmitted || (blurredWithContent.password && !isPasswordEmpty));
+  const showConfirmPasswordError =
+    !!errors.confirmPassword &&
+    (isSubmitted || (blurredWithContent.confirmPassword && !isConfirmPasswordEmpty));
+
+  const passwordRegister = register('password');
+  const confirmPasswordRegister = register('confirmPassword');
 
   const passwordStatus = passwordRules.map((rule) => ({
     ...rule,
@@ -92,30 +105,34 @@ export default function ResetPasswordForm() {
               <div className="relative">
                 <Input
                   id="password"
-                  name="password"
                   type={seePassword ? 'text' : 'password'}
                   placeholder="Enter new password"
-                  className={`transition-all focus:ring-2 focus:ring-primary/20 ${errors.password?.message && 'border-destructive bg-destructive/10 text-destructive'}`}
+                  className={`transition-all focus:ring-2 focus:ring-primary/20 ${errors.password?.message && showPasswordError && 'border-destructive bg-destructive/10 text-destructive'}`}
                   disabled={pending}
-                  {...register('password')}
-                  aria-invalid={!!errors.password}
+                  {...passwordRegister}
+                  onBlur={(e) => {
+                    passwordRegister.onBlur(e);
+                    setBlurredWithContent((prev) => ({ ...prev, password: e.target.value !== '' }));
+                  }}
+                  aria-invalid={!!(showPasswordError ? errors.password?.message : null)}
                   onKeyDown={handleFocusNext('confirmPassword')}
+                  required
                 />
 
                 {!isPasswordEmpty && (
                   <button
                     type="button"
                     onClick={() => setSeePassword((p) => !p)}
-                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${errors.password?.message ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
+                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${errors.password?.message && showPasswordError ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
                   >
                     {seePassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 )}
               </div>
 
-              {errors.password?.message || state.errorMessage.password?.[0] ? (
+              {(showPasswordError ? errors.password?.message : null) || state.errorMessage.password?.[0] ? (
                 <FieldError>
-                  {errors.password?.message || state.errorMessage.password?.[0]}
+                  {(showPasswordError ? errors.password?.message : null) || state.errorMessage.password?.[0]}
                 </FieldError>
               ) : (
                 <FieldDescription>
@@ -171,7 +188,7 @@ export default function ResetPasswordForm() {
                       'flex items-center gap-2 text-xs transition-colors duration-300',
                       rule.passed
                         ? 'text-green-600 dark:text-green-500'
-                        : errors.password
+                        : errors.password && showPasswordError
                           ? 'text-destructive'
                           : 'text-muted-foreground',
                     )}
@@ -199,16 +216,21 @@ export default function ResetPasswordForm() {
               </FieldLabel>
               <Input
                 id="confirmPassword"
-                name="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
-                {...register('confirmPassword')}
-                aria-invalid={!!errors.confirmPassword}
+                {...confirmPasswordRegister}
+                onBlur={(e) => {
+                  confirmPasswordRegister.onBlur(e);
+                  setBlurredWithContent((prev) => ({ ...prev, confirmPassword: e.target.value !== '' }));
+                }}
+                aria-invalid={!!(showConfirmPasswordError ? errors.confirmPassword?.message : null)}
+                required
               />
               <FieldError>
-                {errors.confirmPassword?.message || state.errorMessage.confirmPassword?.[0]}
+                {(showConfirmPasswordError ? errors.confirmPassword?.message : null) ||
+                  state.errorMessage.confirmPassword?.[0]}
               </FieldError>
             </Field>
           </div>

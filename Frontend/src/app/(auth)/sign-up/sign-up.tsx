@@ -29,7 +29,7 @@ export function SignUpForm() {
     register,
     control,
     setFocus,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<z.infer<typeof SignUpFormSchema>>({
     resolver: zodResolver(SignUpFormSchema),
     mode: 'onTouched',
@@ -47,14 +47,39 @@ export function SignUpForm() {
     { success: false, errorMessage: {} },
   );
 
+  const [blurredWithContent, setBlurredWithContent] = useState({
+    username: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+
   const [seePassword, setSeePassword] = useState(false);
 
-  const passwordValue = useWatch({
-    control,
-    name: 'password',
-    defaultValue: '',
-  });
+  const usernameValue = useWatch({ control, name: 'username', defaultValue: '' });
+  const emailValue = useWatch({ control, name: 'email', defaultValue: '' });
+  const passwordValue = useWatch({ control, name: 'password', defaultValue: '' });
+  const confirmPasswordValue = useWatch({ control, name: 'confirmPassword', defaultValue: '' });
+
+  const isUsernameEmpty = usernameValue === '';
+  const isEmailEmpty = emailValue === '';
   const isPasswordEmpty = passwordValue === '';
+  const isConfirmPasswordEmpty = confirmPasswordValue === '';
+
+  const showUsernameError =
+    !!errors.username && (isSubmitted || (blurredWithContent.username && !isUsernameEmpty));
+  const showEmailError =
+    !!errors.email && (isSubmitted || (blurredWithContent.email && !isEmailEmpty));
+  const showPasswordError =
+    !!errors.password && (isSubmitted || (blurredWithContent.password && !isPasswordEmpty));
+  const showConfirmPasswordError =
+    !!errors.confirmPassword &&
+    (isSubmitted || (blurredWithContent.confirmPassword && !isConfirmPasswordEmpty));
+
+  const usernameRegister = register('username');
+  const emailRegister = register('email');
+  const passwordRegister = register('password');
+  const confirmPasswordRegister = register('confirmPassword');
 
   const passwordStatus = passwordRules.map((rule) => ({
     ...rule,
@@ -94,17 +119,21 @@ export function SignUpForm() {
               <FieldLabel htmlFor="username">Username</FieldLabel>
               <Input
                 id="username"
-                name="username"
                 type="text"
                 placeholder="Enter your username"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
-                aria-invalid={!!errors.username}
-                {...register('username')}
+                {...usernameRegister}
+                onBlur={(e) => {
+                  usernameRegister.onBlur(e);
+                  setBlurredWithContent((prev) => ({ ...prev, username: e.target.value !== '' }));
+                }}
+                aria-invalid={!!(showUsernameError ? errors.username?.message : null)}
                 onKeyDown={handleFocusNext('email')}
+                required
               />
               <FieldError>
-                {errors.username?.message || state.errorMessage.username?.[0]}
+                {(showUsernameError ? errors.username?.message : null) || state.errorMessage.username?.[0]}
               </FieldError>
             </Field>
           </div>
@@ -115,17 +144,21 @@ export function SignUpForm() {
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="Enter your email"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
-                aria-invalid={!!errors.email}
-                {...register('email')}
+                {...emailRegister}
+                onBlur={(e) => {
+                  emailRegister.onBlur(e);
+                  setBlurredWithContent((prev) => ({ ...prev, email: e.target.value !== '' }));
+                }}
+                aria-invalid={!!(showEmailError ? errors.email?.message : null)}
                 onKeyDown={handleFocusNext('password')}
+                required
               />
               <FieldError>
-                {errors.email?.message || state.errorMessage.email?.[0]}
+                {(showEmailError ? errors.email?.message : null) || state.errorMessage.email?.[0]}
               </FieldError>
             </Field>
           </div>
@@ -137,30 +170,34 @@ export function SignUpForm() {
               <div className="relative">
                 <Input
                   id="password"
-                  name="password"
                   type={seePassword ? 'text' : 'password'}
                   placeholder="Enter your password"
-                  className={`transition-all focus:ring-2 focus:ring-primary/20 ${errors.password?.message && 'border-destructive bg-destructive/10 text-destructive'}`}
+                  className={`transition-all focus:ring-2 focus:ring-primary/20 ${errors.password?.message && showPasswordError && 'border-destructive bg-destructive/10 text-destructive'}`}
                   disabled={pending}
-                  {...register('password')}
-                  aria-invalid={!!errors.password}
+                  {...passwordRegister}
+                  onBlur={(e) => {
+                    passwordRegister.onBlur(e);
+                    setBlurredWithContent((prev) => ({ ...prev, password: e.target.value !== '' }));
+                  }}
+                  aria-invalid={!!(showPasswordError ? errors.password?.message : null)}
                   onKeyDown={handleFocusNext('confirmPassword')}
+                  required
                 />
 
                 {!isPasswordEmpty && (
                   <button
                     type="button"
                     onClick={() => setSeePassword((p) => !p)}
-                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${errors.password?.message ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
+                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${errors.password?.message && showPasswordError ? 'border-destructive bg-red-200  text-destructive' : 'bg-white'}`}
                   >
                     {seePassword ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 )}
               </div>
 
-              {errors.password?.message || state.errorMessage.password?.[0] ? (
+              {(showPasswordError ? errors.password?.message : null) || state.errorMessage.password?.[0] ? (
                 <FieldError>
-                  {errors.password?.message || state.errorMessage.password?.[0]}
+                  {(showPasswordError ? errors.password?.message : null) || state.errorMessage.password?.[0]}
                 </FieldError>
               ) : (
                 <FieldDescription>
@@ -216,7 +253,7 @@ export function SignUpForm() {
                       'flex items-center gap-2 text-xs transition-colors duration-300',
                       rule.passed
                         ? 'text-green-600 dark:text-green-500'
-                        : errors.password
+                        : errors.password && showPasswordError
                           ? 'text-destructive'
                           : 'text-muted-foreground',
                     )}
@@ -244,16 +281,21 @@ export function SignUpForm() {
               </FieldLabel>
               <Input
                 id="confirmPassword"
-                name="confirmPassword"
                 type="password"
                 placeholder="Confirm your password"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
-                {...register('confirmPassword')}
-                aria-invalid={!!errors.confirmPassword}
+                {...confirmPasswordRegister}
+                onBlur={(e) => {
+                  confirmPasswordRegister.onBlur(e);
+                  setBlurredWithContent((prev) => ({ ...prev, confirmPassword: e.target.value !== '' }));
+                }}
+                aria-invalid={!!(showConfirmPasswordError ? errors.confirmPassword?.message : null)}
+                required
               />
               <FieldError>
-                {errors.confirmPassword?.message || state.errorMessage.confirmPassword?.[0]}
+                {(showConfirmPasswordError ? errors.confirmPassword?.message : null) ||
+                  state.errorMessage.confirmPassword?.[0]}
               </FieldError>
             </Field>
           </div>

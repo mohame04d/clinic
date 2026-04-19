@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
-const saltOrRounds = 10;
+const saltOrRounds = 12;
 
 type UserData = {
   userId: string;
@@ -12,18 +13,10 @@ type UserData = {
   photo: string;
 };
 
-function generateRandomPassword() {
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~`|}{[]\:;?><,./-=';
-  let password = '';
-  const passwordLength = Math.floor(Math.random() * (20 - 4 + 1)) + 4;
-
-  for (let i = 0; i < passwordLength; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    password += chars[randomIndex];
-  }
-
-  return password;
+// SECURITY: Generate a cryptographically secure random password for OAuth users.
+// These users never need to know their password (they sign in via Google).
+function generateRandomPassword(): string {
+  return randomBytes(32).toString('base64');
 }
 
 @Injectable()
@@ -62,6 +55,7 @@ export class AuthService {
 
       const token = await this.jwtService.signAsync(payload, {
         secret: process.env.JWT_SECRET,
+        expiresIn: '1h',
       });
 
       const refresh_token = await this.jwtService.signAsync(
@@ -72,10 +66,13 @@ export class AuthService {
         },
       );
 
+      // SECURITY: Strip password hash from response data.
+      const { password: _, ...safeUser } = newUser;
+
       return {
         status: 200,
         message: 'User created successfully',
-        data: newUser,
+        data: safeUser,
         access_token: token,
         refresh_token,
       };
@@ -90,6 +87,7 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET,
+      expiresIn: '1h',
     });
 
     const refresh_token = await this.jwtService.signAsync(
@@ -100,10 +98,13 @@ export class AuthService {
       },
     );
 
+    // SECURITY: Strip password hash from response data.
+    const { password: _, ...safeUser } = user;
+
     return {
       status: 200,
       message: 'User logged in successfully',
-      data: user,
+      data: safeUser,
       access_token: token,
       refresh_token,
     };

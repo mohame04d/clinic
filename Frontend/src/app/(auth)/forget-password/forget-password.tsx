@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState } from 'react';
+// 1. ADDED: useState import
+import { useActionState, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -29,10 +30,21 @@ export default function ForgetPasswordPreview() {
     reValidateMode: 'onChange',
   });
 
+  const [blurredWithContent, setBlurredWithContent] = useState(false);
   const [state, action, pending] = useActionState<ActionResult, FormData>(
     forgotPasswordAction,
     { success: false, errorMessage: {} },
   );
+
+  const { isSubmitted, errors } = form.formState;
+  const emailValue = form.watch('email');
+  const isEmailEmpty = emailValue === '';
+
+  const showEmailError =
+    !!errors.email && (isSubmitted || (blurredWithContent && !isEmailEmpty));
+
+  // 2. ADDED: Extract register so we can safely wrap it
+  const emailRegister = form.register('email');
 
   return (
     <Card className="transition-all duration-300 hover:shadow-lg border-border/50">
@@ -53,17 +65,22 @@ export default function ForgetPasswordPreview() {
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="johndoe@mail.com"
                 autoComplete="email"
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
-                aria-invalid={!!form.formState.errors.email}
-                {...form.register('email')}
+                {...emailRegister}
+                onBlur={(e) => {
+                  emailRegister.onBlur(e);
+                  setBlurredWithContent(e.target.value !== '');
+                }}
+                aria-invalid={showEmailError}
               />
               <FieldError>
-                {form.formState.errors?.email?.message || state.errorMessage.email?.[0]}
+                {(showEmailError
+                  ? form.formState.errors?.email?.message
+                  : null) || state.errorMessage.email?.[0]}
               </FieldError>
               <FieldDescription>
                 We&apos;ll send you a verification code if this email exists.

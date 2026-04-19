@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   HttpException,
 } from '@nestjs/common';
+import { randomInt } from 'crypto';
 
 import {
   SignInDto,
@@ -39,9 +40,9 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(signUpDto.password, 12);
 
-    const code = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, '0');
+    // SECURITY: Use cryptographically secure random number for OTP generation.
+    // Math.random() is NOT suitable for security-sensitive values.
+    const code = randomInt(0, 1000000).toString().padStart(6, '0');
 
     const user = await this.prisma.user.create({
       data: {
@@ -136,7 +137,9 @@ export class AuthService {
       where: { email: signInDto.email },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    // SECURITY: Use a generic error message for both "user not found" and
+    // "wrong password" to prevent user enumeration attacks.
+    if (!user) throw new UnauthorizedException('Invalid email or password');
 
     const isPasswordValid = await bcrypt.compare(
       signInDto.password,
@@ -144,7 +147,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const payload = {
@@ -184,11 +187,18 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    if (!user) throw new NotFoundException('User not found');
+    // SECURITY: Always return the same success response regardless of whether
+    // the email exists. This prevents user enumeration — an attacker cannot
+    // determine which emails are registered by probing this endpoint.
+    if (!user) {
+      return {
+        status: 'success',
+        message: 'If this email exists, a verification code has been sent.',
+      };
+    }
 
-    const code = Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, '0');
+    // SECURITY: Use cryptographically secure random number for OTP generation.
+    const code = randomInt(0, 1000000).toString().padStart(6, '0');
 
     await this.prisma.user.update({
       where: { email: dto.email },
@@ -206,7 +216,7 @@ export class AuthService {
     `;
 
     await this.mailService.sendMail({
-      from: 'your-email@gmail.com',
+      from: 'clinic Team',
       to: user.email,
       subject: 'Password Reset Code',
       html,
@@ -214,7 +224,7 @@ export class AuthService {
 
     return {
       status: 'success',
-      message: `Verification code sent to ${user.email}`,
+      message: 'If this email exists, a verification code has been sent.',
     };
   }
 
@@ -324,6 +334,7 @@ export class AuthService {
 
       const newAccessToken = this.jwtService.sign(payload, {
         secret: process.env.JWT_SECRET,
+        expiresIn: '1h',
       });
 
       const newRefreshToken = this.jwtService.sign(
@@ -334,9 +345,12 @@ export class AuthService {
         },
       );
 
+      // SECURITY: Strip sensitive fields before returning user data.
+      const { password: _, verificationCode: __, resetpasswordToken: ___, resetpasswordExpire: ____, ...safeUser } = user;
+
       return {
         status: 'success',
-        data: user,
+        data: safeUser,
         access_token: newAccessToken,
         refresh_token: newRefreshToken,
       };
