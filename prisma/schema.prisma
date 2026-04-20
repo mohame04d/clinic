@@ -71,3 +71,25 @@ enum Day {
   THU
   FRI
 }
+
+enum Status {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model Appointment {   
+  id          String   @id @default(cuid())
+  patientId   String
+  doctorId    String
+  date        DateTime
+  duration    Int      @default(30)
+  status      Status   @default(pending)
+  notes       String?
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("appointments")
+}
