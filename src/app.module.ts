@@ -5,9 +5,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { OAuthModule } from './oauth/oauth.module';
 import { UserModule } from './user/user.module';
 import { DoctorModule } from './doctor/doctor.module';
+import { AppointmentsModule } from './appointment/appontment.module';
 
 @Module({
   imports: [
@@ -26,11 +28,16 @@ import { DoctorModule } from './doctor/doctor.module';
       ],
     }),
 
+    // SECURITY: ScheduleModule enables @Cron decorators for automated tasks
+    // like deleting unverified users (CleanupService).
+    ScheduleModule.forRoot(),
+
     AuthModule,
     PrismaModule,
     OAuthModule,
     UserModule,
     DoctorModule,
+    AppointmentsModule,
 
     JwtModule.register({
       global: true,
@@ -51,4 +58,3 @@ import { DoctorModule } from './doctor/doctor.module';
   providers: [],
 })
 export class AppModule {}
-

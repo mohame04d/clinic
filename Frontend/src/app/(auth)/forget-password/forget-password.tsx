@@ -1,7 +1,7 @@
 'use client';
 
 // 1. ADDED: useState import
-import { useActionState, useState } from 'react';
+import { useActionState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -30,18 +30,13 @@ export default function ForgetPasswordPreview() {
     reValidateMode: 'onChange',
   });
 
-  const [blurredWithContent, setBlurredWithContent] = useState(false);
   const [state, action, pending] = useActionState<ActionResult, FormData>(
     forgotPasswordAction,
     { success: false, errorMessage: {} },
   );
 
-  const { isSubmitted, errors } = form.formState;
-  const emailValue = form.watch('email');
-  const isEmailEmpty = emailValue === '';
-
-  const showEmailError =
-    !!errors.email && (isSubmitted || (blurredWithContent && !isEmailEmpty));
+  const { isSubmitted, errors, touchedFields } = form.formState;
+  const showEmailError = !!errors.email && (isSubmitted || touchedFields.email);
 
   // 2. ADDED: Extract register so we can safely wrap it
   const emailRegister = form.register('email');
@@ -71,10 +66,6 @@ export default function ForgetPasswordPreview() {
                 className="transition-all focus:ring-2 focus:ring-primary/20"
                 disabled={pending}
                 {...emailRegister}
-                onBlur={(e) => {
-                  emailRegister.onBlur(e);
-                  setBlurredWithContent(e.target.value !== '');
-                }}
                 aria-invalid={showEmailError}
               />
               <FieldError>

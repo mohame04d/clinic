@@ -27,22 +27,30 @@ model DaySchedule {
 }
 
 model User {
-  id                  String    @id @default(cuid())
+  id                  String      @id @default(cuid())
   name                String
-  email               String    @unique
+  email               String      @unique
   password            String
-  role                Role      @default(PATIENT)
+  role                Role        @default(PATIENT)
   phone               String?
   dateOfBirth         DateTime?
   refreshToken        String?
   resetpasswordToken  String?
   resetpasswordExpire DateTime?
   passwordChangedAt   DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-  active              Boolean   @default(true)
+  failedLoginAttempts Int         @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  active              Boolean     @default(true)
   verificationCode    String?
+  otpPurpose          OtpPurpose?
   doctor              Doctor?
+  appointments        Appointment[]
+
+  // PERF: Index for CleanupService cron job (runs every hour)
+  // Speeds up: WHERE verificationCode IS NOT NULL AND createdAt < cutoff
+  @@index([verificationCode, createdAt])
 }
 
 model Doctor {
@@ -55,11 +63,17 @@ model Doctor {
   location  String?
   user      User    @relation(fields: [userId], references: [id])
   schedules DaySchedule[]
+  appointments Appointment[]
 }
 
 enum Role {
   DOCTOR
   PATIENT
+}
+
+enum OtpPurpose {
+  SIGN_UP
+  PASSWORD_RESET
 }
 
 enum Day {
@@ -82,7 +96,9 @@ enum Status {
 model Appointment {   
   id          String   @id @default(cuid())
   patientId   String
+  patient     User     @relation(fields: [patientId], references: [id])
   doctorId    String
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
   date        DateTime
   duration    Int      @default(30)
   status      Status   @default(pending)

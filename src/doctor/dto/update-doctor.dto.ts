@@ -1,4 +1,31 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateDoctorDto } from './create-doctor.dto';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsUrl,
+  Min,
+  Max,
+  MaxLength,
+} from 'class-validator';
 
-export class UpdateDoctorDto extends PartialType(CreateDoctorDto) {}
+export class UpdateDoctorProfileDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  specialty?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  bio?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsUrl({}, { message: 'photo must be a valid URL' })
+  photo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  location?: string;
+}

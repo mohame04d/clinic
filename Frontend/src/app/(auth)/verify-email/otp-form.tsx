@@ -16,7 +16,6 @@ import { otpFormSchema } from '@/src/validations/zod';
 import {
   verifyCodeAction,
   resendCodeAction,
-  getResendTimerAction,
 } from '@/src/features/auth/actions/auth-actions';
 import type { ActionResult } from '@/src/features/auth/actions/auth-actions';
 
@@ -40,14 +39,8 @@ export default function OTPForm({ initialSecondsRemaining }: OTPFormProps) {
     { success: false, errorMessage: {} },
   );
 
-  // Custom error tracking
-  const [blurredWithContent, setBlurredWithContent] = useState(false);
-  const { isSubmitted, errors } = form.formState;
-  const otpValue = form.watch('otp');
-  const isOtpEmpty = otpValue === '';
-
-  const showOtpError =
-    !!errors.otp && (isSubmitted || (blurredWithContent && !isOtpEmpty));
+  const { isSubmitted, errors, touchedFields } = form.formState;
+  const showOtpError = !!errors.otp && (isSubmitted || touchedFields.otp);
 
   const otpRegister = form.register('otp');
 
@@ -126,10 +119,6 @@ export default function OTPForm({ initialSecondsRemaining }: OTPFormProps) {
                 className="transition-all focus:ring-2 focus:ring-primary/20 text-center text-lg tracking-widest"
                 disabled={pending}
                 {...otpRegister}
-                onBlur={(e) => {
-                  otpRegister.onBlur(e);
-                  setBlurredWithContent(e.target.value !== '');
-                }}
                 aria-invalid={showOtpError}
               />
               <FieldError>

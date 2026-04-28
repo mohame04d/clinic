@@ -29,11 +29,11 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts",
-    "src/app/(test)/authantications",
-    "src/app/(test)/Booking",
-    "src/app/(test)/doctor",
-    "src/app/(test)/landing",
-    "src/app/(test)/patient"
+    "src/app/(pages)/authantications",
+    "src/app/(pages)/Booking",
+    "src/app/(pages)/doctor",
+    "src/app/(pages)/landing",
+    "src/app/(pages)/patient"
   ],
   "exclude": ["node_modules"]
 }

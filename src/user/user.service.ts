@@ -1,22 +1,25 @@
-import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async getMe(payload) {
-    if (!payload._id) throw new NotFoundException('user not found');
+  async getMe(payload: { id: string }) {
+    if (!payload.id) throw new NotFoundException('user not found');
 
     const user = await this.prisma.user.findUnique({
-      where: { id: payload._id },
+      where: { id: payload.id },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        phone: true,
+        dateOfBirth: true,
         active: true,
+        createdAt: true,
       },
     });
 
@@ -28,27 +31,26 @@ export class UserService {
     };
   }
 
-  async updateMe(payload, updateUserDto) {
-    if (!payload._id) throw new NotFoundException('user not found');
+  async updateMe(payload: { id: string }, updateUserDto: UpdateUserDto) {
+    if (!payload.id) throw new NotFoundException('user not found');
 
     const user = await this.prisma.user.findUnique({
-      where: { id: payload._id },
+      where: { id: payload.id },
     });
 
     if (!user) throw new NotFoundException('user not found');
 
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 12);
-    }
-
+    // SECURITY: updateUserDto only contains whitelisted fields (name, phone)
+    // because the DTO class + ValidationPipe(whitelist: true) strip everything else.
     const updatedUser = await this.prisma.user.update({
-      where: { id: payload._id },
+      where: { id: payload.id },
       data: updateUserDto,
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        phone: true,
         active: true,
       },
     });
@@ -59,17 +61,17 @@ export class UserService {
     };
   }
 
-  async deleteMe(payload): Promise<void> {
-    if (!payload._id) throw new NotFoundException('user not found');
+  async deleteMe(payload: { id: string }): Promise<void> {
+    if (!payload.id) throw new NotFoundException('user not found');
 
     const user = await this.prisma.user.findUnique({
-      where: { id: payload._id },
+      where: { id: payload.id },
     });
 
     if (!user) throw new NotFoundException('user not found');
 
     await this.prisma.user.update({
-      where: { id: payload._id },
+      where: { id: payload.id },
       data: { active: false },
     });
   }

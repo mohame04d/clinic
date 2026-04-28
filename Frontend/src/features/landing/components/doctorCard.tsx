@@ -18,7 +18,13 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
             />
           </div>
-          <div className="absolute top-4 right-4 h-3 w-3 bg-chart-2 rounded-full ring-4 ring-background animate-pulse" />
+
+          {/* Pulsing dot with added ARIA labels for accessibility */}
+          <div
+            className="absolute top-4 right-4 h-3 w-3 bg-chart-2 rounded-full ring-4 ring-background animate-pulse"
+            title="Available for booking"
+            aria-label="Available for booking"
+          />
         </div>
 
         <div className="space-y-1 mb-6">
@@ -34,7 +40,7 @@ export function DoctorCard({ doctor }: { doctor: Doctor }) {
           </div>
         </div>
 
-        <Button className="w-full font-bold text-sm tracking-wide group-hover:shadow-md  active:scale-95">
+        <Button className="w-full font-bold text-sm tracking-wide group-hover:shadow-md active:scale-95">
           Check Availability
         </Button>
       </CardContent>

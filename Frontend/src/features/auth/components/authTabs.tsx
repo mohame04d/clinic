@@ -10,13 +10,13 @@ export function AuthTabs({ activeTab }: AuthTabsProps) {
 
   return (
     <div className="pt-1 flex justify-center w-[90%] mx-auto">
-      <div className="flex w-full bg-muted p-1 rounded-lg">
+      <div className="flex w-full bg-muted  rounded-lg">
         {/* Sign In Link */}
         <Link
           href="/sign-in"
           className={`
             flex-1 flex items-center justify-center gap-2 
-            px-6 py-2.5 rounded-md text-sm whitespace-nowrap 
+            px-6 py-3 rounded-l-lg  text-sm whitespace-nowrap 
             ${
               !isSignUp
                 ? 'bg-primary text-primary-foreground font-bold shadow-sm'
@@ -32,8 +32,8 @@ export function AuthTabs({ activeTab }: AuthTabsProps) {
         <Link
           href="/sign-up"
           className={`
-            flex-1 flex items-center justify-center gap-2 
-            px-6 py-2.5 rounded-md text-sm whitespace-nowrap 
+            flex-1 rounded-r-lg flex items-center justify-center gap-2 
+            px-6 py-3 text-sm whitespace-nowrap 
             ${
               isSignUp
                 ? 'bg-primary text-primary-foreground font-bold shadow-sm'

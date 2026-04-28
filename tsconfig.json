@@ -22,8 +22,5 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
   },
-  "exclude": [
-    "Frontend",
-    "Frontend/**/*"
-  ]
+  "exclude": ["Frontend", "Frontend/**/*"]
 }

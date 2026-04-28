@@ -1,8 +1,12 @@
 'use server';
 
+// =========================
+// SERVER ACTIONS — AUTHENTICATION LAYER
+// =========================
 // SECURITY: Next.js Server Actions execute code securely on the server.
-// Using this directly hides the API URL and any potential payload structure
-// from the client's 'Network' tab, minimizing the attack surface.
+// This hides the NestJS API URL and all payload structures from the client's
+// Network tab, minimizing the attack surface. The browser only ever sees
+// requests to the Next.js domain.
 
 import { redirect } from 'next/navigation';
 import { apiPost, ApiError } from '@/src/lib/api-client';
@@ -38,13 +42,21 @@ interface AuthResponse {
   refresh_token: string;
 }
 
+interface SignUpResponse {
+  status: string;
+  message: string;
+  data: { id: string; name: string; email: string; role: 'PATIENT' | 'DOCTOR' };
+}
+
 interface MessageResponse {
   status: string;
   message: string;
 }
 
 interface VerifyCodeResponse extends MessageResponse {
-  resetToken: string;
+  resetToken?: string;
+  access_token?: string;
+  refresh_token?: string;
 }
 
 // =========================
@@ -59,9 +71,17 @@ export async function signInAction(
     password: formData.get('password') as string,
   };
 
+  // SECURITY: Double-layer validation — Zod validates on the server even though
+  // the client also validates. This prevents bypassing client-side checks.
   const parsed = loginFormSchema.safeParse(value);
   if (!parsed.success) {
-    return { success: false, errorMessage: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+    return {
+      success: false,
+      errorMessage: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[]
+      >,
+    };
   }
 
   try {
@@ -70,6 +90,8 @@ export async function signInAction(
       password: parsed.data.password,
     });
 
+    // SECURITY: Store tokens in HTTP-only cookies, never in localStorage/sessionStorage.
+    // This prevents XSS attacks from stealing tokens via document.cookie or JS access.
     await setAuthCookies(res.access_token, res.refresh_token);
 
     const redirectPath = res.data.role === 'DOCTOR' ? '/doctor' : '/patient';
@@ -78,13 +100,16 @@ export async function signInAction(
     if (err instanceof ApiError) {
       return { success: false, errorMessage: { server: [err.message] } };
     }
-    throw err; // re-throw redirect errors (Next.js uses throw for redirect)
+    throw err; // re-throw redirect errors (Next.js uses throw internally for redirect)
   }
 }
 
 // =========================
 // SIGN UP
 // =========================
+// SECURITY: Sign-up does NOT issue tokens. The backend only sends OTP.
+// Tokens are issued after the user verifies their email via verifyCodeSignUp.
+// This prevents unverified users from having a valid session.
 export async function signUpAction(
   _: ActionResult,
   formData: FormData,
@@ -98,17 +123,24 @@ export async function signUpAction(
 
   const parsed = SignUpFormSchema.safeParse(value);
   if (!parsed.success) {
-    return { success: false, errorMessage: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+    return {
+      success: false,
+      errorMessage: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[]
+      >,
+    };
   }
 
   try {
-    const res = await apiPost<AuthResponse>('/auth/sign-up', {
+    await apiPost<SignUpResponse>('/auth/sign-up', {
       name: parsed.data.username,
       email: parsed.data.email,
       password: parsed.data.password,
     });
 
-    await setAuthCookies(res.access_token, res.refresh_token);
+    // SECURITY: Only store the email in a cookie for the OTP verification step.
+    // NO tokens are set here — the user must complete email verification first.
     await setResetEmail(parsed.data.email);
     await setOtpSentAt();
 
@@ -134,7 +166,13 @@ export async function forgotPasswordAction(
 
   const parsed = forgetPasswordSchema.safeParse(value);
   if (!parsed.success) {
-    return { success: false, errorMessage: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+    return {
+      success: false,
+      errorMessage: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[]
+      >,
+    };
   }
 
   try {
@@ -157,6 +195,9 @@ export async function forgotPasswordAction(
 // =========================
 // VERIFY CODE
 // =========================
+// SECURITY: This action handles TWO different flows:
+//   - signup: calls /auth/signup-code → receives JWT tokens → sets cookies → redirect to /patient
+//   - reset:  calls /auth/verify-code → receives resetToken → stores in cookie → redirect to /reset-password
 export async function verifyCodeAction(
   _: ActionResult,
   formData: FormData,
@@ -164,28 +205,54 @@ export async function verifyCodeAction(
   const value = {
     otp: formData.get('otp') as string,
   };
-  const flow = formData.get('flow') as string || 'reset';
+  const flow = (formData.get('flow') as string) || 'reset';
 
   const parsed = otpFormSchema.safeParse(value);
   if (!parsed.success) {
-    return { success: false, errorMessage: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+    return {
+      success: false,
+      errorMessage: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[]
+      >,
+    };
   }
 
   try {
     const email = await getResetEmail();
     if (!email) {
-      return { success: false, errorMessage: { server: ['Session expired. Please start over.'] } };
+      return {
+        success: false,
+        errorMessage: { server: ['Session expired. Please start over.'] },
+      };
     }
 
-    const res = await apiPost<VerifyCodeResponse>('/auth/verify-code', {
-      email,
-      code: parsed.data.otp,
-    });
-
     if (flow === 'signup') {
+      // SECURITY: Sign-up flow — verify email and receive first-time JWT tokens.
+      // Tokens are ONLY issued AFTER successful OTP verification.
+      const res = await apiPost<VerifyCodeResponse>('/auth/signup-code', {
+        email,
+        code: parsed.data.otp,
+      });
+
+      // Now that email is verified, set auth cookies for the first time.
+      if (res.access_token && res.refresh_token) {
+        await setAuthCookies(res.access_token, res.refresh_token);
+      }
+
       redirect('/patient');
     } else {
-      await setResetToken(res.resetToken);
+      // SECURITY: Password reset flow — verify OTP and receive a one-time resetToken.
+      // The resetToken is stored in an HTTP-only cookie and required by /auth/change-password.
+      const res = await apiPost<VerifyCodeResponse>('/auth/verify-code', {
+        email,
+        code: parsed.data.otp,
+      });
+
+      if (res.resetToken) {
+        await setResetToken(res.resetToken);
+      }
+
       redirect('/reset-password');
     }
   } catch (err) {
@@ -197,23 +264,31 @@ export async function verifyCodeAction(
 }
 
 // =========================
-// RESEND CODE (no FormData)
+// RESEND CODE (no FormData — called directly, not via useActionState)
 // =========================
-export async function resendCodeAction(): Promise<ActionResult & { secondsRemaining?: number }> {
+// SECURITY: Server-side cooldown enforcement via HTTP-only cookie timestamp.
+// Attackers cannot bypass the cooldown via DevTools because the cookie is httpOnly.
+export async function resendCodeAction(): Promise<
+  ActionResult & { secondsRemaining?: number }
+> {
   try {
-    // SECURITY: Enforce cooldown server-side so attackers cannot bypass it
     const remaining = await getOtpSecondsRemaining();
     if (remaining > 0) {
       return {
         success: false,
-        errorMessage: { server: [`Please wait ${remaining} seconds before resending.`] },
+        errorMessage: {
+          server: [`Please wait ${remaining} seconds before resending.`],
+        },
         secondsRemaining: remaining,
       };
     }
 
     const email = await getResetEmail();
     if (!email) {
-      return { success: false, errorMessage: { server: ['Session expired. Please start over.'] } };
+      return {
+        success: false,
+        errorMessage: { server: ['Session expired. Please start over.'] },
+      };
     }
 
     await apiPost<MessageResponse>('/auth/reset-password', { email });
@@ -224,14 +299,19 @@ export async function resendCodeAction(): Promise<ActionResult & { secondsRemain
     if (err instanceof ApiError) {
       return { success: false, errorMessage: { server: [err.message] } };
     }
-    return { success: false, errorMessage: { server: ['Failed to resend code'] } };
+    return {
+      success: false,
+      errorMessage: { server: ['Failed to resend code'] },
+    };
   }
 }
 
 // =========================
-// GET RESEND TIMER (secure)
+// GET RESEND TIMER (secure server-side timer check)
 // =========================
-export async function getResendTimerAction(): Promise<{ secondsRemaining: number }> {
+export async function getResendTimerAction(): Promise<{
+  secondsRemaining: number;
+}> {
   const secondsRemaining = await getOtpSecondsRemaining();
   return { secondsRemaining };
 }
@@ -250,7 +330,13 @@ export async function changePasswordAction(
 
   const parsed = resetPasswordSchema.safeParse(value);
   if (!parsed.success) {
-    return { success: false, errorMessage: parsed.error.flatten().fieldErrors as Record<string, string[]> };
+    return {
+      success: false,
+      errorMessage: parsed.error.flatten().fieldErrors as Record<
+        string,
+        string[]
+      >,
+    };
   }
 
   try {
@@ -260,16 +346,21 @@ export async function changePasswordAction(
     if (!email || !resetToken) {
       return {
         success: false,
-        errorMessage: { server: ['Session expired. Please start the reset process again.'] },
+        errorMessage: {
+          server: ['Session expired. Please start the reset process again.'],
+        },
       };
     }
 
+    // SECURITY: The resetToken ties this request to a verified OTP session.
+    // Without it, an attacker cannot change anyone's password.
     await apiPost<MessageResponse>('/auth/change-password', {
       email,
       password: parsed.data.password,
       resetToken,
     });
 
+    // SECURITY: Clear all reset-flow cookies after successful password change.
     await clearResetData();
 
     redirect('/sign-in');
@@ -279,4 +370,16 @@ export async function changePasswordAction(
     }
     throw err;
   }
+}
+
+// =========================
+// SIGN OUT
+// =========================
+// SECURITY: Clears all auth cookies (access_token + refresh_token) on sign-out.
+// Since cookies are HTTP-only, they can ONLY be cleared by the server — not by
+// client-side JavaScript. This is why sign-out must be a server action.
+export async function signOutAction(): Promise<void> {
+  const { clearAuthCookies } = await import('@/src/lib/auth-cookies');
+  await clearAuthCookies();
+  redirect('/sign-in');
 }

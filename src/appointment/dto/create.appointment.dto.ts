@@ -9,9 +9,9 @@ import {
 import { Type } from 'class-transformer';
 
 export class CreateAppointmentDto {
-  @IsString()
-  @IsNotEmpty()
-  patientId!: string;
+  // SECURITY: patientId is NOT accepted from the request body.
+  // It is extracted from the JWT in the controller. This prevents
+  // a patient from booking appointments on behalf of another user.
 
   @IsString()
   @IsNotEmpty()
@@ -24,16 +24,9 @@ export class CreateAppointmentDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  duration!: number;
-
-  @IsOptional()
-  status!: String;
+  duration?: number;
 
   @IsOptional()
   @IsString()
-  notes!: string;
-
-  @IsOptional()
-  @IsString()
-  adminNotes?: string;
+  notes?: string;
 }

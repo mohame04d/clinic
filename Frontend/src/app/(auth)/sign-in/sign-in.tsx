@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState } from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Input } from '@/src/components/ui/input';
@@ -8,14 +8,17 @@ import { Field, FieldLabel, FieldError } from '@/src/components/ui/field';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { loginFormSchema } from '@/src/validations/zod';
 import { AuthTabs } from '@/src/features/auth/components/authTabs';
+import { PasswordInput } from '@/src/features/auth/components/password-input';
 import { signInAction } from '@/src/features/auth/actions/auth-actions';
 import type { ActionResult } from '@/src/features/auth/actions/auth-actions';
+
+
 
 export function LoginForm() {
   const form = useForm<z.infer<typeof loginFormSchema>>({
@@ -30,29 +33,10 @@ export function LoginForm() {
     { success: false, errorMessage: {} },
   );
 
-  // 1. We replace 'touchedFields' with our own precise tracking state
-  const { isSubmitted, errors } = form.formState;
-  const [blurredWithContent, setBlurredWithContent] = useState({
-    email: false,
-    password: false,
-  });
+  const {  errors } = form.formState;
 
-  const [seePassword, setSeePassword] = useState(false);
-
-  const emailValue = form.watch('email');
-  const passwordValue = form.watch('password');
-
-  const isEmailEmpty = emailValue === '';
-  const isPasswordEmpty = passwordValue === '';
-
-  // 2. Updated Display Logic: Only show the error if submitted, OR if they specifically blurred while there was text.
-  // We keep !isEmpty so if they backspace everything out, the error hides again giving them a fresh start.
-  const showEmailError =
-    !!errors.email &&
-    (isSubmitted || (blurredWithContent.email && !isEmailEmpty));
-  const showPasswordError =
-    !!errors.password &&
-    (isSubmitted || (blurredWithContent.password && !isPasswordEmpty));
+  const emailRegister = form.register('email');
+  const passwordRegister = form.register('password');
 
   const handleFocusNext =
     (focusNext: 'email' | 'password') =>
@@ -62,10 +46,6 @@ export function LoginForm() {
         form.setFocus(focusNext);
       }
     };
-
-  // 3. Extract the register functions so we can safely wrap their onBlur handlers
-  const emailRegister = form.register('email');
-  const passwordRegister = form.register('password');
 
   return (
     <Card className="transition-all duration-300 hover:shadow-lg border-border/50">
@@ -91,22 +71,12 @@ export function LoginForm() {
                 placeholder="Enter your Email"
                 disabled={pending}
                 {...emailRegister}
-                onBlur={(e) => {
-                  // Run standard RHF validation
-                  emailRegister.onBlur(e);
-                  // Update our custom state: true if they left text, false if they left it empty
-                  setBlurredWithContent((prev) => ({
-                    ...prev,
-                    email: e.target.value !== '',
-                  }));
-                }}
                 onKeyDown={handleFocusNext('password')}
-                aria-invalid={!!(showEmailError ? errors.email?.message : null)}
+                aria-invalid={!!errors.email}
                 required
               />
               <FieldError>
-                {(showEmailError ? errors.email?.message : null) ||
-                  state.errorMessage.email?.[0]}
+                {errors.email?.message || state.errorMessage.email?.[0]}
               </FieldError>
             </Field>
           </div>
@@ -115,45 +85,15 @@ export function LoginForm() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={seePassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  disabled={pending}
-                  {...passwordRegister}
-                  onBlur={(e) => {
-                    // Run standard RHF validation
-                    passwordRegister.onBlur(e);
-                    // Update our custom state
-                    setBlurredWithContent((prev) => ({
-                      ...prev,
-                      password: e.target.value !== '',
-                    }));
-                  }}
-                  aria-invalid={
-                    !!(showPasswordError ? errors.password?.message : null)
-                  }
-                  required
-                />
-                {!isPasswordEmpty && (
-                  <button
-                    type="button"
-                    onClick={() => setSeePassword((p) => !p)}
-                    className={`flex justify-center items-center  h-[95%] w-10 absolute right-0.25 rounded-r-md top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors ${
-                      form.formState.errors.password?.message &&
-                      showPasswordError
-                        ? 'border-destructive bg-red-200  text-destructive'
-                        : 'bg-white'
-                    }`}
-                  >
-                    {seePassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                  </button>
-                )}
-              </div>
+              <PasswordInput
+                control={form.control}
+                pending={pending}
+                registerProps={passwordRegister}
+                errorMsg={errors.password?.message || state.errorMessage.password?.[0]}
+                onKeyDown={handleFocusNext('password')}
+              />
               <FieldError>
-                {(showPasswordError ? errors.password?.message : null) ||
-                  state.errorMessage.password?.[0]}
+                {errors.password?.message || state.errorMessage.password?.[0]}
               </FieldError>
             </Field>
 
@@ -183,7 +123,7 @@ export function LoginForm() {
             </Button>
           </div>
 
-          {/* DIVIDER & SOCIAL LOGINS (kept intact) */}
+          {/* DIVIDER & SOCIAL LOGINS */}
           <div className="relative my-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-both">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
@@ -195,7 +135,7 @@ export function LoginForm() {
             </div>
           </div>
 
-          <div className="space-y-3 flex gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms] fill-mode-both">
+          <div className="space-y-3 flex gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[500ms] fill-mode-both">
             <Button
               type="button"
               variant="outline"
